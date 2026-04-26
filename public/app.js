@@ -1,6 +1,11 @@
 const state = {
   books: [],
-  issues: []
+  issues: [],
+  filters: {
+    bookSearch: "",
+    bookStatus: "all",
+    issueSearch: ""
+  }
 };
 
 const elements = {
@@ -11,7 +16,10 @@ const elements = {
   issueBook: document.getElementById("issue-book"),
   booksTableBody: document.getElementById("books-table-body"),
   issuesTableBody: document.getElementById("issues-table-body"),
-  toast: document.getElementById("toast")
+  toast: document.getElementById("toast"),
+  bookSearch: document.getElementById("book-search"),
+  bookStatusFilter: document.getElementById("book-status-filter"),
+  issueSearch: document.getElementById("issue-search")
 };
 
 async function request(url, options = {}) {
@@ -57,6 +65,15 @@ function badgeClasses(status) {
   return "bg-emerald-100 text-emerald-700";
 }
 
+function getBookById(bookId) {
+  return state.books.find((book) => book.id === bookId);
+}
+
+function canDeleteBook(bookId) {
+  const book = getBookById(bookId);
+  return Boolean(book && book.status === "available");
+}
+
 function renderSummary(summary) {
   const cards = [
     { label: "Total Books", value: summary.totalBooks, accent: "bg-skyglass" },
@@ -93,17 +110,36 @@ function renderIssueOptions() {
   `;
 }
 
+function getFilteredBooks() {
+  const term = state.filters.bookSearch.trim().toLowerCase();
+
+  return state.books.filter((book) => {
+    const matchesStatus =
+      state.filters.bookStatus === "all" || book.status === state.filters.bookStatus;
+
+    const matchesSearch =
+      !term ||
+      book.title.toLowerCase().includes(term) ||
+      book.author.toLowerCase().includes(term) ||
+      String(book.id).includes(term);
+
+    return matchesStatus && matchesSearch;
+  });
+}
+
 function renderBooks() {
-  if (!state.books.length) {
+  const filteredBooks = getFilteredBooks();
+
+  if (!filteredBooks.length) {
     elements.booksTableBody.innerHTML = `
       <tr>
-        <td colspan="6" class="px-4 py-6 text-center text-slate-500">No books added yet.</td>
+        <td colspan="6" class="px-4 py-6 text-center text-slate-500">No books match the current search or filter.</td>
       </tr>
     `;
     return;
   }
 
-  elements.booksTableBody.innerHTML = state.books
+  elements.booksTableBody.innerHTML = filteredBooks
     .map(
       (book) => `
         <tr class="align-top">
@@ -121,12 +157,12 @@ function renderBooks() {
           <td class="px-4 py-4">
             <button
               data-book-delete="${book.id}"
-              class="rounded-xl px-3 py-2 text-xs font-semibold text-white ${
+              class="rounded-xl px-3 py-2 text-xs font-semibold text-white transition ${
                 book.status === "issued" ? "bg-slate-300 cursor-not-allowed" : "bg-rose-500 hover:bg-rose-600"
               }"
               ${book.status === "issued" ? "disabled" : ""}
             >
-              Delete
+              Delete Book
             </button>
           </td>
         </tr>
@@ -135,17 +171,36 @@ function renderBooks() {
     .join("");
 }
 
+function getFilteredIssues() {
+  const term = state.filters.issueSearch.trim().toLowerCase();
+
+  return state.issues.filter((issue) => {
+    if (!term) {
+      return true;
+    }
+
+    return (
+      issue.title.toLowerCase().includes(term) ||
+      issue.author.toLowerCase().includes(term) ||
+      issue.issuedTo.toLowerCase().includes(term) ||
+      issue.status.toLowerCase().includes(term)
+    );
+  });
+}
+
 function renderIssues() {
-  if (!state.issues.length) {
+  const filteredIssues = getFilteredIssues();
+
+  if (!filteredIssues.length) {
     elements.issuesTableBody.innerHTML = `
       <tr>
-        <td colspan="4" class="px-4 py-6 text-center text-slate-500">No issue activity yet.</td>
+        <td colspan="4" class="px-4 py-6 text-center text-slate-500">No issue activity matches this search.</td>
       </tr>
     `;
     return;
   }
 
-  elements.issuesTableBody.innerHTML = state.issues
+  elements.issuesTableBody.innerHTML = filteredIssues
     .map(
       (issue) => `
         <tr class="align-top">
@@ -162,8 +217,26 @@ function renderIssues() {
           <td class="px-4 py-4">
             ${
               issue.status === "issued"
-                ? `<button data-return-id="${issue.id}" class="rounded-xl bg-emerald-500 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-600">Return</button>`
-                : `<span class="text-xs font-semibold text-slate-400">Completed</span>`
+                ? `
+                  <div class="flex flex-wrap gap-2">
+                    <button data-return-id="${issue.id}" class="rounded-xl bg-emerald-500 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-600">Return</button>
+                    <button disabled class="rounded-xl bg-slate-300 px-3 py-2 text-xs font-semibold text-white cursor-not-allowed">Delete</button>
+                  </div>
+                `
+                : `
+                  <div class="flex flex-wrap gap-2">
+                    <span class="inline-flex items-center rounded-xl bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-500">Returned</span>
+                    <button
+                      data-book-delete="${issue.bookId}"
+                      class="rounded-xl px-3 py-2 text-xs font-semibold text-white transition ${
+                        canDeleteBook(issue.bookId) ? "bg-rose-500 hover:bg-rose-600" : "bg-slate-300 cursor-not-allowed"
+                      }"
+                      ${canDeleteBook(issue.bookId) ? "" : "disabled"}
+                    >
+                      Delete Book
+                    </button>
+                  </div>
+                `
             }
           </td>
         </tr>
@@ -259,6 +332,11 @@ document.addEventListener("click", async (event) => {
     }
 
     if (deleteButton && !deleteButton.disabled) {
+      const confirmed = window.confirm("Delete this book from the database?");
+      if (!confirmed) {
+        return;
+      }
+
       await request(`/api/books/${deleteButton.dataset.bookDelete}`, {
         method: "DELETE"
       });
@@ -268,6 +346,21 @@ document.addEventListener("click", async (event) => {
   } catch (error) {
     showToast(error.message, "error");
   }
+});
+
+elements.bookSearch.addEventListener("input", (event) => {
+  state.filters.bookSearch = event.target.value;
+  renderBooks();
+});
+
+elements.bookStatusFilter.addEventListener("change", (event) => {
+  state.filters.bookStatus = event.target.value;
+  renderBooks();
+});
+
+elements.issueSearch.addEventListener("input", (event) => {
+  state.filters.issueSearch = event.target.value;
+  renderIssues();
 });
 
 async function init() {

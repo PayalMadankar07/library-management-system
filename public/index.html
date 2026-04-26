@@ -166,6 +166,30 @@
                 Deleting a book removes it from the database too. Issued books must be returned first.
               </p>
             </div>
+
+            <div class="grid gap-3 sm:grid-cols-2">
+              <label class="block">
+                <span class="mb-2 block text-xs font-bold uppercase tracking-[0.18em] text-slate-500">Search Books</span>
+                <input
+                  id="book-search"
+                  type="text"
+                  placeholder="Search by title or author"
+                  class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none transition focus:border-sky-400 focus:bg-white"
+                />
+              </label>
+
+              <label class="block">
+                <span class="mb-2 block text-xs font-bold uppercase tracking-[0.18em] text-slate-500">Filter Status</span>
+                <select
+                  id="book-status-filter"
+                  class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none transition focus:border-sky-400 focus:bg-white"
+                >
+                  <option value="all">All Books</option>
+                  <option value="available">Available</option>
+                  <option value="issued">Issued</option>
+                </select>
+              </label>
+            </div>
           </div>
 
           <div class="overflow-hidden rounded-3xl border border-slate-100">
@@ -184,6 +208,48 @@
                 <tbody id="books-table-body" class="divide-y divide-slate-100 bg-white"></tbody>
               </table>
             </div>
+          </div>
+        </section>
+
+        <section class="mt-8 rounded-[2rem] bg-white p-6 shadow-float">
+          <div class="mb-5 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 class="text-2xl font-bold text-ink">Issue Timeline Search</h2>
+              <p class="text-sm text-slate-500">Find who took which book and whether it has been returned.</p>
+            </div>
+
+            <label class="block sm:min-w-80">
+              <span class="mb-2 block text-xs font-bold uppercase tracking-[0.18em] text-slate-500">Search Activity</span>
+              <input
+                id="issue-search"
+                type="text"
+                placeholder="Search by user or book"
+                class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none transition focus:border-sky-400 focus:bg-white"
+              />
+            </label>
+          </div>
+
+          <div class="grid gap-4 md:grid-cols-3">
+            <article class="rounded-3xl bg-slate-50 p-5">
+              <div class="text-xs font-bold uppercase tracking-[0.18em] text-slate-500">Presentation Tip</div>
+              <p class="mt-3 text-sm leading-6 text-slate-600">
+                First add 2 books, issue 1 book, then show how the counts and table status change instantly.
+              </p>
+            </article>
+
+            <article class="rounded-3xl bg-sky-50 p-5">
+              <div class="text-xs font-bold uppercase tracking-[0.18em] text-sky-700">Realtime Proof</div>
+              <p class="mt-3 text-sm leading-6 text-sky-800">
+                Every add, issue, return, or delete action sends data to the backend and updates MySQL immediately.
+              </p>
+            </article>
+
+            <article class="rounded-3xl bg-emerald-50 p-5">
+              <div class="text-xs font-bold uppercase tracking-[0.18em] text-emerald-700">Safety Rule</div>
+              <p class="mt-3 text-sm leading-6 text-emerald-800">
+                Issued books cannot be deleted until they are returned, which shows real business logic instead of basic CRUD only.
+              </p>
+            </article>
           </div>
         </section>
       </main>
